@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>台東区 子どもイベントカレンダー</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#1D9E75;--blue:#378ADD;--pink:#D4537E;--orange:#EF9F27;--purple:#7C5CBF;--teal:#2AACAA;--red:#E05A5A;--gray:#888;
+  --bg:#F7F8FA;--card:#fff;--border:#E5E7EB;--text:#1A1A2E;--muted:#6B7280;
+}
+body{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,#1D9E75,#378ADD);color:#fff;padding:20px 16px 16px;text-align:center}
+header h1{font-size:20px;font-weight:700;letter-spacing:.05em;margin-bottom:4px}
+header p{font-size:12px;opacity:.85}
+.container{max-width:800px;margin:0 auto;padding:12px}
+
+/* フィルター */
+.filters{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
+.filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filter-label{font-size:12px;font-weight:600;color:var(--text);min-width:44px}
+.btn-group{display:flex;gap:5px;flex-wrap:wrap}
+.fbtn{font-size:11px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;transition:all .15s;line-height:1.3}
+.fbtn:hover{border-color:#999}
+.fbtn.active-all{background:#1A1A2E;color:#fff;border-color:#1A1A2E}
+.fbtn.active-age{background:#E8F5FF;color:#185FA5;border-color:#378ADD}
+.fbtn.active-niko{background:#E1F5EE;color:#0F6E56;border-color:#1D9E75}
+.fbtn.active-waku{background:#E6F1FB;color:#185FA5;border-color:#378ADD}
+.fbtn.active-poka{background:#FBEAF0;color:#993556;border-color:#D4537E}
+.fbtn.active-nobi{background:#FAEEDA;color:#854F0B;border-color:#EF9F27}
+.fbtn.active-yanaka{background:#F0EAFB;color:#5B3D9E;border-color:#7C5CBF}
+.fbtn.active-kotobuki{background:#E6FAFA;color:#186060;border-color:#2AACAA}
+.fbtn.active-senzoku{background:#FAEAEA;color:#8C2020;border-color:#E05A5A}
+
+/* 凡例 */
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* カレンダー */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-title{font-size:18px;font-weight:700}
+.count-badge{font-size:11px;color:var(--muted);background:#F3F4F6;padding:3px 10px;border-radius:20px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dow{text-align:center;font-size:11px;color:var(--muted);padding:4px 0;font-weight:600}
+.day{min-height:72px;border-radius:8px;background:var(--card);border:1px solid var(--border);padding:4px;transition:opacity .2s}
+.day.empty{background:transparent;border-color:transparent}
+.day.dimmed{opacity:.2}
+.day.has-events{border-color:#D1D5DB}
+.dn{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px}
+.ev{font-size:9px;border-radius:3px;padding:2px 4px;margin-bottom:2px;line-height:1.4;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev:hover{opacity:.75;transform:translateX(1px)}
+.ev.niko{background:#E1F5EE;color:#0F6E56}
+.ev.waku{background:#E6F1FB;color:#185FA5}
+.ev.poka{background:#FBEAF0;color:#993556}
+.ev.nobi{background:#FAEEDA;color:#854F0B}
+.ev.yanaka{background:#F0EAFB;color:#5B3D9E}
+.ev.kotobuki{background:#E6FAFA;color:#186060}
+.ev.senzoku{background:#FAEAEA;color:#8C2020}
+.ev.user{background:#FFF8E1;color:#795548;border:1px dashed #FFC107}
+.ev.hidden{display:none}
+
+/* 詳細 */
+.detail{margin-top:12px;background:var(--card);border-radius:12px;border:1px solid var(--border);padding:14px}
+.detail-placeholder{font-size:13px;color:var(--muted);text-align:center;padding:16px 0}
+.detail h3{font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.4}
+.badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.badge{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:500}
+.badge.src-niko{background:#E1F5EE;color:#0F6E56}
+.badge.src-waku{background:#E6F1FB;color:#185FA5}
+.badge.src-poka{background:#FBEAF0;color:#993556}
+.badge.src-nobi{background:#FAEEDA;color:#854F0B}
+.badge.src-yanaka{background:#F0EAFB;color:#5B3D9E}
+.badge.src-kotobuki{background:#E6FAFA;color:#186060}
+.badge.src-senzoku{background:#FAEAEA;color:#8C2020}
+.badge.src-user{background:#FFF8E1;color:#795548}
+.badge.req{background:#FEF3C7;color:#92400E}
+.badge.free{background:#D1FAE5;color:#065F46}
+.meta{font-size:12px;color:var(--muted);line-height:2.2}
+.meta span{margin-right:4px}
+.open-alert{background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:8px 12px;font-size:11px;color:#92400E;margin-top:8px;display:flex;align-items:center;gap:6px}
+.gcal-btn{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;padding:10px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-size:12px;font-weight:500;cursor:pointer;text-decoration:none;transition:all .15s}
+.gcal-btn:hover{background:#F9FAFB;border-color:#999}
+
+/* 投稿フォーム */
+.submit-section{margin-top:16px;background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden}
+.submit-header{padding:12px 16px;background:#F9FAFB;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.submit-header h2{font-size:14px;font-weight:600}
+.submit-toggle{font-size:11px;color:var(--muted)}
+.submit-form{padding:14px;display:none;flex-direction:column;gap:10px}
+.submit-form.open{display:flex}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:11px;font-weight:600;color:var(--muted)}
+.form-group input,.form-group select,.form-group textarea{font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;outline:none;transition:border-color .15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#378ADD}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.submit-btn{background:linear-gradient(135deg,#1D9E75,#378ADD);color:#fff;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.submit-btn:hover{opacity:.9}
+.submit-msg{font-size:12px;text-align:center;padding:6px;border-radius:6px;display:none}
+.submit-msg.success{background:#D1FAE5;color:#065F46;display:block}
+.submit-msg.error{background:#FEE2E2;color:#991B1B;display:block}
+
+/* ローディング */
+.loading{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎈 台東区 子どもイベントカレンダー</h1>
+  <p>子ども家庭支援センター・児童館のイベントを一覧できます</p>
+</header>
+
+<div class="container">
+
+  <!-- フィルター -->
+  <div class="filters">
+    <div class="filter-row">
+      <span class="filter-label">月齢</span>
+      <div class="btn-group" id="ageBtn">
+        <button class="fbtn active-all" data-age="all">すべて</button>
+        <button class="fbtn" data-age="0">0〜5か月</button>
+        <button class="fbtn" data-age="6">6〜11か月</button>
+        <button class="fbtn" data-age="12">1歳</button>
+        <button class="fbtn" data-age="24">2歳</button>
+        <button class="fbtn" data-age="36">3歳以上</button>
+      </div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">場所</span>
+      <div class="btn-group" id="locBtn">
+        <button class="fbtn active-all" data-loc="all">すべて</button>
+        <button class="fbtn" data-loc="niko">にこにこ<br><small>日本堤</small></button>
+        <button class="fbtn" data-loc="waku">わくわく<br><small>台東</small></button>
+        <button class="fbtn" data-loc="poka">ぽかぽか<br><small>谷中</small></button>
+        <button class="fbtn" data-loc="nobi">のびのび<br><small>寿</small></button>
+        <button class="fbtn" data-loc="yanaka">谷中<br><small>児童館</small></button>
+        <button class="fbtn" data-loc="kotobuki">寿<br><small>児童館</small></button>
+        <button class="fbtn" data-loc="senzoku">千束<br><small>児童館</small></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 凡例 -->
+  <div class="legend">
+    <div class="leg"><div class="dot" style="background:#1D9E75"></div>にこにこ</div>
+    <div class="leg"><div class="dot" style="background:#378ADD"></div>わくわく</div>
+    <div class="leg"><div class="dot" style="background:#D4537E"></div>ぽかぽか</div>
+    <div class="leg"><div class="dot" style="background:#EF9F27"></div>のびのび</div>
+    <div class="leg"><div class="dot" style="background:#7C5CBF"></div>谷中児童館</div>
+    <div class="leg"><div class="dot" style="background:#2AACAA"></div>寿児童館</div>
+    <div class="leg"><div class="dot" style="background:#E05A5A"></div>千束児童館</div>
+    <div class="leg"><div class="dot" style="background:#FFC107;border-radius:2px"></div>手動投稿</div>
+  </div>
+
+  <!-- カレンダーヘッダー -->
+  <div class="cal-header">
+    <div class="cal-title">2026年 8月</div>
+    <div class="count-badge" id="countBadge"></div>
+  </div>
+
+  <!-- カレンダー -->
+  <div class="cal-grid">
+    <div class="dow">日</div><div class="dow">月</div><div class="dow">火</div>
+    <div class="dow">水</div><div class="dow">木</div><div class="dow">金</div><div class="dow">土</div>
+  </div>
+  <div class="cal-grid" id="cal"><div class="loading">読み込み中...</div></div>
+
+  <!-- 詳細 -->
+  <div class="detail" id="detail">
+    <div class="detail-placeholder">イベントをタップすると詳細が表示されます</div>
+  </div>
+
+  <!-- 投稿フォーム -->
+  <div class="submit-section">
+    <div class="submit-header" id="formToggle">
+      <h2>➕ イベントを追加登録する</h2>
+      <span class="submit-toggle" id="toggleLabel">開く ▼</span>
+    </div>
+    <div class="submit-form" id="submitForm">
+      <div class="form-group">
+        <label>イベント名 *</label>
+        <input type="text" id="f-name" placeholder="例：親子ヨガ教室">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>日付 *</label>
+          <input type="date" id="f-date" min="2026-08-01" max="2026-08-31">
+        </div>
+        <div class="form-group">
+          <label>開始時間</label>
+          <input type="time" id="f-start">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>終了時間</label>
+          <input type="time" id="f-end">
+        </div>
+        <div class="form-group">
+          <label>定員</label>
+          <input type="text" id="f-cap" placeholder="例：20組">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>対象</label>
+        <input type="text" id="f-target" placeholder="例：0歳〜3歳の乳幼児親子">
+      </div>
+      <div class="form-group">
+        <label>場所・施設名 *</label>
+        <input type="text" id="f-loc" placeholder="例：台東区〇〇1-2-3 〇〇センター">
+      </div>
+      <div class="form-group">
+        <label>主催者名・団体名 *</label>
+        <input type="text" id="f-org" placeholder="例：〇〇親子サークル">
+      </div>
+      <div class="form-group">
+        <label>申込・詳細URL</label>
+        <input type="url" id="f-url" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label>申込方法・備考</label>
+        <textarea id="f-note" rows="2" placeholder="例：要申込・電話にて受付（03-XXXX-XXXX）"></textarea>
+      </div>
+      <div class="submit-msg" id="submitMsg"></div>
+      <button class="submit-btn" id="submitBtn">登録する</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://urqxwjcylwlvwoleayhr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVycXh3amN5bHdsdndvbGVheWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2OTk1NzksImV4cCI6MjEwMDI3NTU3OX0._FGwO51x7dZ3Of69j02u_CYpEQXI3L7wAOBUGxXogrY';
+
+const srcLabel = {
+  niko:'にこにこひろば（日本堤）',waku:'わくわくひろば（台東）',
+  poka:'ぽかぽかひろば（谷中）',nobi:'のびのびひろば（寿）',
+  yanaka:'谷中児童館',kotobuki:'寿児童館',senzoku:'千束児童館',
+  user:'手動投稿'
+};
+const ageRanges = {all:null,'0':[0,5],'6':[6,11],'12':[12,23],'24':[24,35],'36':[36,47]};
+
+let allEvents = [];
+let selAge = 'all', selLoc = 'all';
+
+// Supabaseからデータ取得
+async function fetchEvents() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/events?date=gte.2026-08-01&date=lte.2026-08-31&order=date,start_time`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+  );
+  return await res.json();
+}
+
+// 表示判定
+function visible(ev) {
+  const aOk = selAge === 'all' || (() => {
+    const [mn, mx] = ageRanges[selAge];
+    return mn <= (ev.max_month ?? 999) && mx >= (ev.min_month ?? 0);
+  })();
+  const lOk = selLoc === 'all' || ev.source === selLoc || (selLoc === 'user' && ev.is_user_submitted);
+  return aOk && lOk;
+}
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function gcalUrl(ev) {
+  const d = ev.date.replace(/-/g,'');
+  const sh = ev.start_time ? ev.start_time.replace(':','') + '00' : '100000';
+  const eh = ev.end_time ? ev.end_time.replace(':','') + '00' : '120000';
+  const s = `${d}T${sh}`, e = `${d}T${eh}`;
+  const det = `${srcLabel[ev.source]||ev.source_label||''}｜対象:${ev.target||''}｜定員:${ev.capacity||''}${ev.requires_booking?'｜要申込':''}${ev.booking_start?'｜'+ev.booking_start:''}`;
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(ev.name)}&dates=${s}/${e}&details=${encodeURIComponent(det)}&location=${encodeURIComponent(ev.location||'')}`;
+}
+
+function renderCal() {
+  const cal = document.getElementById('cal');
+  cal.innerHTML = '';
+  const evByDay = {};
+  allEvents.forEach(ev => {
+    const d = parseInt(ev.date.split('-')[2]);
+    if (!evByDay[d]) evByDay[d] = [];
+    evByDay[d].push(ev);
+  });
+
+  let total = 0;
+  for (let i = 0; i < 6; i++) {
+    const e = document.createElement('div'); e.className = 'day empty'; cal.appendChild(e);
+  }
+  for (let d = 1; d <= 31; d++) {
+    const cell = document.createElement('div');
+    cell.className = 'day';
+    const evs = evByDay[d] || [];
+    const anyVis = evs.some(e => visible(e));
+    if (evs.length > 0) {
+      cell.classList.add('has-events');
+      if (!anyVis) cell.classList.add('dimmed');
+    }
+    cell.innerHTML = `<div class="dn">${d}</div>` + evs.map((ev, i) => {
+      const show = visible(ev);
+      if (show) total++;
+      const src = ev.is_user_submitted ? 'user' : (ev.source || 'user');
+      const short = ev.name.length > 10 ? ev.name.slice(0,10)+'…' : ev.name;
+      return `<div class="ev ${src}${show ? '' : ' hidden'}" data-id="${ev.id}">${short}</div>`;
+    }).join('');
+    cal.appendChild(cell);
+  }
+
+  const badge = document.getElementById('countBadge');
+  badge.textContent = (selAge === 'all' && selLoc === 'all') ? '' : `${total}件表示中`;
+  cal.addEventListener('click', onEvClick);
+}
+
+function onEvClick(e) {
+  const el = e.target.closest('.ev[data-id]');
+  if (!el) return;
+  const id = parseInt(el.dataset.id);
+  const ev = allEvents.find(e => e.id === id);
+  if (!ev) return;
+
+  const src = ev.is_user_submitted ? 'user' : (ev.source || 'user');
+  const label = srcLabel[src] || ev.source_label || src;
+  const dateStr = ev.date.replace(/(\d+)-(\d+)-(\d+)/, '$1年$2月$3日');
+
+  document.getElementById('detail').innerHTML = `
+    <h3>${ev.name}</h3>
+    <div class="badges">
+      <span class="badge src-${src}">${label}</span>
+      ${ev.requires_booking
+        ? `<span class="badge req">要申込</span>`
+        : `<span class="badge free">申込不要</span>`}
+    </div>
+    <div class="meta">
+      <div>📅 ${dateStr}　${ev.start_time || ''}${ev.end_time ? '〜'+ev.end_time : ''}</div>
+      <div>👶 対象：${ev.target || '—'}</div>
+      <div>🎟 定員：${ev.capacity || '—'}</div>
+      <div>📍 ${ev.location || '—'}</div>
+      ${ev.booking_start ? `<div>📋 ${ev.booking_start}</div>` : ''}
+      ${ev.url ? `<div>🔗 <a href="${ev.url}" target="_blank" style="color:#378ADD">${ev.url}</a></div>` : ''}
+    </div>
+    ${ev.booking_start ? `<div class="open-alert">⏰ ${ev.booking_start}（要確認）</div>` : ''}
+    <a href="${gcalUrl(ev)}" class="gcal-btn" target="_blank">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Googleカレンダーに追加
+    </a>`;
+}
+
+// フィルター
+document.getElementById('ageBtn').addEventListener('click', e => {
+  const b = e.target.closest('.fbtn'); if (!b) return;
+  selAge = b.dataset.age;
+  document.querySelectorAll('#ageBtn .fbtn').forEach(x => x.className = 'fbtn');
+  b.className = `fbtn active-${selAge === 'all' ? 'all' : 'age'}`;
+  document.getElementById('detail').innerHTML = '<div class="detail-placeholder">イベントをタップすると詳細が表示されます</div>';
+  renderCal();
+});
+document.getElementById('locBtn').addEventListener('click', e => {
+  const b = e.target.closest('.fbtn'); if (!b) return;
+  selLoc = b.dataset.loc;
+  document.querySelectorAll('#locBtn .fbtn').forEach(x => x.className = 'fbtn');
+  b.className = `fbtn active-${selLoc === 'all' ? 'all' : selLoc}`;
+  document.getElementById('detail').innerHTML = '<div class="detail-placeholder">イベントをタップすると詳細が表示されます</div>';
+  renderCal();
+});
+
+// フォーム開閉
+document.getElementById('formToggle').addEventListener('click', () => {
+  const f = document.getElementById('submitForm');
+  const l = document.getElementById('toggleLabel');
+  f.classList.toggle('open');
+  l.textContent = f.classList.contains('open') ? '閉じる ▲' : '開く ▼';
+});
+
+// 投稿
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const name = document.getElementById('f-name').value.trim();
+  const date = document.getElementById('f-date').value;
+  const loc  = document.getElementById('f-loc').value.trim();
+  const org  = document.getElementById('f-org').value.trim();
+  const msg  = document.getElementById('submitMsg');
+
+  if (!name || !date || !loc || !org) {
+    msg.className = 'submit-msg error';
+    msg.textContent = '※ イベント名・日付・場所・主催者名は必須です';
+    return;
+  }
+
+  const payload = {
+    name,
+    date,
+    start_time: document.getElementById('f-start').value || null,
+    end_time:   document.getElementById('f-end').value || null,
+    capacity:   document.getElementById('f-cap').value.trim() || null,
+    target:     document.getElementById('f-target').value.trim() || null,
+    location:   loc,
+    source_label: org,
+    source:     'user',
+    url:        document.getElementById('f-url').value.trim() || null,
+    booking_start: document.getElementById('f-note').value.trim() || null,
+    is_user_submitted: true,
+    requires_booking: false
+  };
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '送信中...';
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      msg.className = 'submit-msg success';
+      msg.textContent = '✅ 登録しました！カレンダーに反映されます';
+      // フォームリセット
+      ['f-name','f-date','f-start','f-end','f-cap','f-target','f-loc','f-org','f-url','f-note']
+        .forEach(id => document.getElementById(id).value = '');
+      // 再取得
+      allEvents = await fetchEvents();
+      renderCal();
+    } else {
+      throw new Error('登録に失敗しました');
+    }
+  } catch(err) {
+    msg.className = 'submit-msg error';
+    msg.textContent = '❌ エラーが発生しました。もう一度お試しください';
+  } finally {
+    btn.disabled = false; btn.textContent = '登録する';
+  }
+});
+
+// 初期化
+(async () => {
+  try {
+    allEvents = await fetchEvents();
+    renderCal();
+  } catch(e) {
+    document.getElementById('cal').innerHTML = '<div style="padding:20px;color:red;font-size:13px">データの読み込みに失敗しました</div>';
+  }
+})();
+</script>
+<footer style="background:#1A1A2E;color:#9CA3AF;text-align:center;padding:24px 16px;margin-top:24px;font-size:11px;line-height:2">
+  <p style="color:#fff;font-size:13px;font-weight:600;margin-bottom:8px">🎈 台東区 子どもイベントカレンダー</p>
+  <p>情報は各施設の公式情報をもとにしています。内容は変更になる場合があります。</p>
+  <p>イベント情報の追加・修正・お問い合わせは<a href="https://forms.gle/uRYa2LQMcRMnA1XG9" target="_blank" style="color:#60A5FA;text-decoration:underline">こちらのフォーム</a>からどうぞ。</p>
+  <p style="margin-top:8px;opacity:.6">© 2026 台東区子どもイベントカレンダー</p>
+</footer>
+</body>
+</html>
