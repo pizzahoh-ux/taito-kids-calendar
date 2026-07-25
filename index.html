@@ -234,7 +234,7 @@ footer .copy{margin-top:8px;opacity:.6}
 <footer>
   <div class="footer-title">🎈 台東区 子どもイベントカレンダー</div>
   <p>情報は各施設の公式情報をもとにしています。内容は変更になる場合があります。</p>
-  <p>お問い合わせやフィードバックは<a href="https://forms.gle/uRYa2LQMcRMnA1XG9" target="_blank">こちらのフォーム</a>からお願いします。</p>
+  <p>当サイトは皆さまの声で成り立っております。お問い合わせやフィードバック、通報・修正依頼などは<a href="https://forms.gle/uRYa2LQMcRMnA1XG9" target="_blank">こちらのフォーム</a>から積極的にお願いします。</p>
   <p style="margin-top:10px">運営：<a href="https://pizzahoh.wixsite.com/kodomo-no-tsudoi" target="_blank">台東区子どもの集い</a></p>
   <p class="copy">© 2026 台東区子どもイベントカレンダー</p>
 </footer>
@@ -271,7 +271,8 @@ async function fetchEarliestMonth() {
 }
 
 let allEvents = [];
-let selAge = 'all', selLoc = 'all';
+let selAge = 'all';
+let selLocs = new Set(['all']); // 複数選択対応
 
 function daysInMonth(y, m) {
   return new Date(y, m, 0).getDate();
@@ -295,7 +296,8 @@ function visible(ev) {
     const [mn, mx] = ageRanges[selAge];
     return mn <= (ev.max_month ?? 999) && mx >= (ev.min_month ?? 0);
   })();
-  const lOk = selLoc === 'all' || ev.source === selLoc;
+  const src = ev.is_user_submitted ? 'user' : (ev.source || 'user');
+  const lOk = selLocs.has('all') || selLocs.has(src);
   return aOk && lOk;
 }
 
@@ -409,9 +411,29 @@ document.getElementById('ageBtn').addEventListener('click', e => {
 });
 document.getElementById('locBtn').addEventListener('click', e => {
   const b = e.target.closest('.fbtn'); if (!b) return;
-  selLoc = b.dataset.loc;
-  document.querySelectorAll('#locBtn .fbtn').forEach(x => x.className = 'fbtn');
-  b.className = `fbtn active-${selLoc==='all'?'all':selLoc}`;
+  const loc = b.dataset.loc;
+
+  if (loc === 'all') {
+    // 「すべて」を押したら全解除してallだけに
+    selLocs = new Set(['all']);
+  } else {
+    selLocs.delete('all');
+    if (selLocs.has(loc)) {
+      selLocs.delete(loc);
+      // 何も選ばれてなくなったら「すべて」に戻す
+      if (selLocs.size === 0) selLocs.add('all');
+    } else {
+      selLocs.add(loc);
+    }
+  }
+
+  // ボタンの見た目を更新
+  document.querySelectorAll('#locBtn .fbtn').forEach(x => {
+    const l = x.dataset.loc;
+    x.className = 'fbtn';
+    if (selLocs.has(l)) x.className += ` active-${l === 'all' ? 'all' : l}`;
+  });
+
   document.getElementById('detail').innerHTML = '<div class="detail-placeholder">イベントをタップすると詳細が表示されます</div>';
   renderCal();
 });
