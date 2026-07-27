@@ -353,8 +353,7 @@ function renderCal() {
   }
 
   const badge = document.getElementById('countBadge');
-  badge.textContent = (selAge==='all' && selLoc==='all') ? '' : `${total}件表示中`;
-
+  badge.textContent = (selAge==='all' && selLocs.has('all')) ? '' : `${total}件表示中`;
   cal.addEventListener('click', onEvClick);
 }
 
