@@ -365,11 +365,16 @@ function visible(ev) {
   const lOk = selLocs.has('all') || selLocs.has(src);
   return aOk && lOk;
 }
+
+function fmtTime(t) {
+  if (!t) return '';
+  return t.slice(0, 5); // "16:00:00" → "16:00"
+}
   
 function gcalUrl(ev) {
   const d = ev.date.replace(/-/g,'');
-  const sh = ev.start_time ? ev.start_time.replace(':','')+'00' : '100000';
-  const eh = ev.end_time   ? ev.end_time.replace(':','')+'00'   : '120000';
+  const sh = ev.start_time ? fmtTime(ev.start_time).replace(':','')+'00' : '100000';
+  const eh = ev.end_time   ? fmtTime(ev.end_time).replace(':','')+'00'   : '120000';
   const det = `${srcLabel[ev.source]||ev.source_label||''}｜対象:${ev.target||''}｜定員:${ev.capacity||''}${ev.requires_booking?'｜要申込':''}${ev.booking_start?'｜'+ev.booking_start:''}`;
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(ev.name)}&dates=${d}T${sh}/${d}T${eh}&details=${encodeURIComponent(det)}&location=${encodeURIComponent(ev.location||'')}`;
 }
@@ -444,7 +449,7 @@ function renderDetail(ev) {
       ${ev.requires_booking ? `<span class="badge req">要申込</span>` : `<span class="badge free">申込不要</span>`}
     </div>
     <div class="meta">
-      <div>📅 ${dateStr}　${ev.start_time||''}${ev.end_time?'〜'+ev.end_time:''}</div>
+      <div>📅 ${dateStr}　${fmtTime(ev.start_time)}${ev.end_time?'〜'+fmtTime(ev.end_time):''}</div>
       <div>👶 対象：${ev.target||'—'}</div>
       <div>🎟 定員：${ev.capacity||'—'}</div>
       <div>📍 ${ev.location||'—'}</div>
@@ -556,9 +561,9 @@ function renderEditForm(ev, pin) {
       <label>日付</label>
       <input type="date" id="e-date" value="${ev.date}">
       <label>開始時間</label>
-      <input type="time" id="e-start" value="${ev.start_time||''}">
+      <input type="time" id="e-start" value="${fmtTime(ev.start_time)}">
       <label>終了時間</label>
-      <input type="time" id="e-end" value="${ev.end_time||''}">
+      <input type="time" id="e-end" value="${fmtTime(ev.end_time)}">
       <label>対象</label>
       <input type="text" id="e-target" value="${esc(ev.target)}">
       <label>定員</label>
