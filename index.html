@@ -361,11 +361,11 @@ function visible(ev) {
     const [mn, mx] = ageRanges[selAge];
     return mn <= (ev.max_month ?? 999) && mx >= (ev.min_month ?? 0);
   })();
-  const src = ev.is_user_submitted ? 'user' : (ev.source || 'user');
+  const src = ev.is_user_submitted ? 'user' : (ev.source || 'other');
   const lOk = selLocs.has('all') || selLocs.has(src);
   return aOk && lOk;
 }
-
+  
 function gcalUrl(ev) {
   const d = ev.date.replace(/-/g,'');
   const sh = ev.start_time ? ev.start_time.replace(':','')+'00' : '100000';
@@ -410,7 +410,7 @@ function renderCal() {
     cell.innerHTML = `<div class="dn">${d}</div>` + evs.map(ev => {
       const show = visible(ev);
       if (show) total++;
-      const src = ev.is_user_submitted ? 'user' : (ev.source || 'user');
+      const src = ev.is_user_submitted ? 'user' : (ev.source || 'other');
       const short = ev.name.length > 10 ? ev.name.slice(0,10)+'…' : ev.name;
       return `<div class="ev ${src}${show?'':' hidden'}" data-id="${ev.id}">${short}</div>`;
     }).join('');
@@ -433,7 +433,7 @@ function onEvClick(e) {
 }
 
 function renderDetail(ev) {
-  const src = ev.is_user_submitted ? 'user' : (ev.source || 'user');
+  const src = ev.is_user_submitted ? 'user' : (ev.source || 'other');
   const label = srcLabel[src] || ev.source_label || src;
   const dateStr = ev.date.replace(/(\d+)-(\d+)-(\d+)/,'$1年$2月$3日');
   const isUser = !!ev.is_user_submitted;
