@@ -361,7 +361,7 @@ function visible(ev) {
     const [mn, mx] = ageRanges[selAge];
     return mn <= (ev.max_month ?? 999) && mx >= (ev.min_month ?? 0);
   })();
-  const src = ev.is_user_submitted ? 'user' : (ev.source || 'other');
+  const src = normalizeSrc(ev);
   const lOk = selLocs.has('all') || selLocs.has(src);
   return aOk && lOk;
 }
@@ -369,6 +369,15 @@ function visible(ev) {
 function fmtTime(t) {
   if (!t) return '';
   return t.slice(0, 5); // "16:00:00" → "16:00"
+}
+
+const KNOWN_SOURCES = new Set([
+  'niko','waku','poka','nobi','yanaka','kotobuki','senzoku',
+  'tamahime','taito','ikenohata','matsugaya','imado','oyakoroom','other'
+]);
+function normalizeSrc(ev) {
+  if (ev.is_user_submitted) return 'user';
+  return (ev.source && KNOWN_SOURCES.has(ev.source)) ? ev.source : 'other';
 }
   
 function gcalUrl(ev) {
@@ -415,7 +424,7 @@ function renderCal() {
     cell.innerHTML = `<div class="dn">${d}</div>` + evs.map(ev => {
       const show = visible(ev);
       if (show) total++;
-      const src = ev.is_user_submitted ? 'user' : (ev.source || 'other');
+      const src = normalizeSrc(ev);
       const short = ev.name.length > 10 ? ev.name.slice(0,10)+'…' : ev.name;
       return `<div class="ev ${src}${show?'':' hidden'}" data-id="${ev.id}">${short}</div>`;
     }).join('');
@@ -438,7 +447,7 @@ function onEvClick(e) {
 }
 
 function renderDetail(ev) {
-  const src = ev.is_user_submitted ? 'user' : (ev.source || 'other');
+  const src = normalizeSrc(ev);
   const label = srcLabel[src] || ev.source_label || src;
   const dateStr = ev.date.replace(/(\d+)-(\d+)-(\d+)/,'$1年$2月$3日');
   const isUser = !!ev.is_user_submitted;
