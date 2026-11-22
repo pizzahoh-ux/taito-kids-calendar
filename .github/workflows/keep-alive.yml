@@ -1,14 +1,46 @@
 name: Keep Supabase Alive
+
 on:
+  # GitHub schedules can be delayed or disabled after 60 days of repository inactivity.
+  # 07:17 and 19:17 JST; changing this cron also reactivates an inactive schedule.
   schedule:
-    - cron: '0 0 * * *'   # 毎日 実行に変更
+    - cron: '17 22,10 * * *'
   workflow_dispatch:
-  
+
+permissions:
+  contents: read
+
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Ping Supabase
+      - name: Query Supabase and verify the response
+        env:
+          SUPABASE_URL: https://urqxwjcylwlvwoleayhr.supabase.co
+          # Public anon key (not service_role). Never put a service_role key in a public repo.
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVycXh3amN5bHdsdndvbGVheWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2OTk1NzksImV4cCI6MjEwMDI3NTU3OX0._FGwO51x7dZ3Of69j02u_CYpEQXI3L7wAOBUGxXogrY
         run: |
-          curl -s "https://urqxwjcylwlvwoleayhr.supabase.co/rest/v1/events?limit=1" \
-            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVycXh3amN5bHdsdndvbGVheWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2OTk1NzksImV4cCI6MjEwMDI3NTU3OX0._FGwO51x7dZ3Of69j02u_CYpEQXI3L7wAOBUGxXogrY"
+          set -euo pipefail
+          body="$(mktemp)"
+          trap 'rm -f "$body"' EXIT
+
+          curl --fail-with-body --silent --show-error --location \
+            --retry 3 --retry-delay 5 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            "$SUPABASE_URL/rest/v1/events?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Accept: application/json" \
+            --output "$body"
+
+          python3 - "$body" <<'PY'
+          import json
+          import sys
+          with open(sys.argv[1], encoding="utf-8") as f:
+              records = json.load(f)
+          if not isinstance(records, list) or len(records) > 1:
+              raise SystemExit("Unexpected Supabase REST response (expected a JSON array with 0-1 rows)")
+          if any(not isinstance(row, dict) or "id" not in row for row in records):
+              raise SystemExit("Supabase returned an unexpected row schema")
+          print("Supabase REST query succeeded.")
+          PY
